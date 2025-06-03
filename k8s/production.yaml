@@ -1,0 +1,148 @@
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: go-docker-minikube
+---
+# pull secret
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    .dockerconfigjson: REPLACE-ME
+  kind: Secret
+  metadata:
+    name: acr-secret
+    namespace: go-docker-minikube
+  type: kubernetes.io/dockerconfigjson
+kind: List
+metadata: {}
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-app
+  namespace: go-docker-minikube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-app
+  template:
+    metadata:
+      labels:
+        app: user-app
+    spec:
+      imagePullSecrets:
+      - name: acr-secret
+      containers:
+      - name: user-app
+        image: REPLACE-ME
+        env:
+        - name: DB_HOST
+          value: postgres
+        ports:
+        - containerPort: 8080
+---
+# Service user-app
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-app
+  namespace: go-docker-minikube
+spec:
+  selector:
+    app: user-app
+  # type: NodePort
+  type: ClusterIP
+  # type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    # nodePort: 30001
+---
+# Postgres Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: go-docker-minikube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:14
+        env:
+        - name: POSTGRES_DB
+          value: users
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        ports:
+        - containerPort: 5432
+---
+# Postgres Service headless
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: go-docker-minikube
+spec:
+  selector:
+    app: postgres
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+  clusterIP: None
+---
+# Deployment frontend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-app
+  namespace: go-docker-minikube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-app
+  template:
+    metadata:
+      labels:
+        app: frontend-app
+    spec:
+      imagePullSecrets:
+      - name: acr-secret
+      containers:
+      - name: frontend-app
+        image: REPLACE-ME
+        env:
+        - name: VITE_API_URL
+          value: SETUP-REVERSE-PROXY-HERE
+        ports:
+        - containerPort: 5173
+---
+# Service frontend-app
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-app
+  namespace: go-docker-minikube
+spec:
+  selector:
+    app: frontend-app
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5173
