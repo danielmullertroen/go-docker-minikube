@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 )
 
 var db *sql.DB
@@ -83,6 +84,6 @@ func main() {
 	router.HandleFunc("/register", registerUser).Methods("POST")
 	router.HandleFunc("/user/{id}", getUser).Methods("GET")
 
-	fmt.Println("Server running on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	handler := cors.Default().Handler(router)
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
