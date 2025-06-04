@@ -27,6 +27,7 @@ minikube service user-app
 | Check pod status | kubectl get pods |
 | Get app logs | kubectl logs <pod-name> |
 | Use port-forward (quick fix) | kubectl port-forward svc/user-app 8080:8080 |
+| Spin up project locally | docker-compose up -d |
 
 	                        
 	            
